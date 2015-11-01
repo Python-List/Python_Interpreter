@@ -2,6 +2,7 @@ import Utility as Util
 from Utility import *
 
 from Constants import *
+import traceback
 
 global gFileBrowser
 
@@ -34,7 +35,7 @@ class FileBrowser(Singleton):
     global gFileBrowser
     gFileBrowser = self
     self.ui = ui
-    self.lastDir = os.path.abspath(".")
+    self.lastDir = os.path.abspath("/")
     self.mode = ""
     # filename input layout
     self.filenameLayout = BoxLayout(orientation = "horizontal", size_hint=(1, None))
@@ -68,17 +69,23 @@ class FileBrowser(Singleton):
     self.popup = Popup(title = "File Browser", content=self.browserLayout, auto_dismiss=False, size_hint=(1, 0.8)) 
   
   def open_directory(self, lastDir):
-    self.lastDir = os.path.abspath(lastDir)
+    absPath = os.path.abspath(lastDir)
+    try:
+      lastDir, dirList, fileList = os.walk(absPath).next()
+    except:
+      log(traceback.format_exc())
+      toast("Cannot open directory")
+      return False
+    self.lastDir = absPath
     self.curDir.text = self.lastDir
     self.fileLayout.clear_widgets()
-    lastDir, dirList, fileList = os.walk(self.lastDir).next()
     fileList = sorted(fileList, key=lambda x:x.lower())
     dirList = sorted(dirList, key=lambda x:x.lower())
     fileList = dirList + fileList
     fileList.insert(0, "..")
     labelHeight = kivy.metrics.dp(25)
     for filename in fileList:
-      absFilename = os.path.join(lastDir, filename)
+      absFilename = os.path.join(self.lastDir, filename)
       label = TouchableLabel(text=filename, font_size="15dp", size_hint_y = None, size=(W*0.9, labelHeight), shorten=True, shorten_from="right", halign="left")
       label.text_size = label.size
       label.setType(os.path.isdir(absFilename))
